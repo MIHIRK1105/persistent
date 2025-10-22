@@ -1,0 +1,224 @@
+openapi: 3.0.0
+info:
+  title: Certification Tracking API
+  version: 1.0.0
+  description: AI-Powered Email Automation for Certification Tracking System - Hackathon Backend API
+  contact:
+    name: API Support
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Development server
+  - url: https://api.-system.com/v1
+    description: Production server
+components:
+  schemas:
+    Employee:
+      type: object
+      properties:
+        employeeId:
+          type: string
+        employeeName:
+          type: string
+        managerEmail:
+          type: string
+        enrollmentStatus:
+          type: string
+          enum:
+            - Enrolled
+            - Not Enrolled
+        enrolledSpecializationName:
+          type: string
+        expectedCompetency:
+          type: string
+        daysToGo:
+          type: integer
+        endDate:
+          type: string
+          format: date
+      required:
+        - employeeId
+        - employeeName
+        - managerEmail
+        - enrollmentStatus
+        - expectedCompetency
+        - endDate
+    Manager:
+      type: object
+      properties:
+        managerId:
+          type: string
+        managerEmail:
+          type: string
+        managerName:
+          type: string
+        level:
+          type: string
+          enum:
+            - L1
+            - L2
+            - L3
+        reportees:
+          type: array
+          items:
+            $ref: '#/components/schemas/Employee'
+    EmailTemplate:
+      type: object
+      properties:
+        templateId:
+          type: string
+        templateName:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+        type:
+          type: string
+          enum:
+            - reminder
+            - escalation
+            - summary
+        level:
+          type: string
+          enum:
+            - L1
+            - L2
+            - L3
+    EmailLog:
+      type: object
+      properties:
+        logId:
+          type: string
+        recipientEmail:
+          type: string
+        subject:
+          type: string
+        sentDate:
+          type: string
+          format: date-time
+        emailType:
+          type: string
+          enum:
+            - reminder
+            - escalation
+            - summary
+        status:
+          type: string
+          enum:
+            - sent
+            - failed
+            - pending
+        managerId:
+          type: string
+        employeeCount:
+          type: integer
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        error:
+          type: string
+        code:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+security:
+  - ApiKeyAuth: []
+paths:
+  /data/employees:
+    get:
+      tags:
+        - Data Management
+      summary: Get all employees data
+      description: Retrieve all employee certification data with filtering options
+      parameters:
+        - name: managerId
+          in: query
+          schema:
+            type: string
+          description: Filter by manager ID
+        - name: enrollmentStatus
+          in: query
+          schema:
+            type: string
+            enum:
+              - Enrolled
+              - Not Enrolled
+          description: Filter by enrollment status
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Number of records per page
+      responses:
+        '200':
+          description: Employee data retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          employees:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Employee'
+                          pagination:
+                            type: object
+                            properties:
+                              page:
+                                type: integer
+                              limit:
+                                type: integer
+                              total:
+                                type: integer
+                              totalPages:
+                                type: integer
+tags:
+  - name: Data Management
+    description: APIs for managing  data import and retrieval
+  - name: Email Generation
+    description: APIs for GenAI-powered email content generation
+  - name: Email Operations
+    description: APIs for sending and managing emails
+  - name: Automation
+    description: APIs for automated scheduling and execution
+  - name: Reporting
+    description: APIs for reports and analytics
+  - name: Email Templates
+    description: APIs for managing email templates
+  - name: System
+    description: System health and monitoring APIs

@@ -1,104 +1,102 @@
 const express = require('express');
+const sqlite3 = require('sqlite3').verbose();
 const app = express();
 app.use(express.json());
 
-// Dummy data
-const employees = [
-  {
-    employeeId: "E001",
-    employeeName: "Preeti",
-    managerEmail: "manager1@example.com",
-    enrollmentStatus: "Enrolled",
-    enrolledSpecializationName: "Data Science",
-    expectedCompetency: "Intermediate",
-    daysToGo: 30,
-    endDate: "2025-12-31"
-  },
-  {
-    employeeId: "E002",
-    employeeName: "John",
-    managerEmail: "manager2@example.com",
-    enrollmentStatus: "Not Enrolled",
-    enrolledSpecializationName: "AI",
-    expectedCompetency: "Beginner",
-    daysToGo: 15,
-    endDate: "2025-11-30"
-  }
-];
+// Create SQLite database in memory
+const db = new sqlite3.Database(':memory:');
 
-const managers = [
-  {
-    managerId: "M001",
-    managerEmail: "manager1@example.com",
-    managerName: "Alice",
-    level: "L1",
-    reportees: [employees[0]]
-  },
-  {
-    managerId: "M002",
-    managerEmail: "manager2@example.com",
-    managerName: "Bob",
-    level: "L2",
-    reportees: [employees[1]]
-  }
-];
+// Create employees table and insert dummy data
+db.serialize(() => {
+  db.run(`CREATE TABLE employees (
+    employeeId TEXT PRIMARY KEY,
+    employeeName TEXT,
+    managerEmail TEXT,
+    enrollmentStatus TEXT,
+    enrolledSpecializationName TEXT,
+    expectedCompetency TEXT,
+    daysToGo INTEGER,
+    endDate TEXT
+  )`);
 
-const emailTemplates = [
-  {
-    templateId: "T001",
-    templateName: "Reminder Template",
-    subject: "Reminder",
-    body: "This is a reminder email.",
-    type: "reminder",
-    level: "L1"
-  }
-];
-
-const emailLogs = [
-  {
-    logId: "L001",
-    recipientEmail: "preeti@example.com",
-    subject: "Reminder",
-    sentDate: new Date(),
-    emailType: "reminder",
-    status: "sent",
-    managerId: "M001",
-    employeeCount: 1
-  }
-];
-
-// --- API Endpoints ---
+  db.run(`INSERT INTO employees 
+    (employeeId, employeeName, managerEmail, enrollmentStatus, enrolledSpecializationName, expectedCompetency, daysToGo, endDate)
+    VALUES 
+    ('E001', 'Preeti', 'manager1@example.com', 'Enrolled', 'Data Science', 'Intermediate', 30, '2025-12-31'),
+    ('E002', 'John', 'manager2@example.com', 'Not Enrolled', 'AI', 'Beginner', 15, '2025-11-30')
+  `);
+});
 
 // GET all employees
 app.get('/api/v1/data/employees', (req, res) => {
-  res.json({
-    success: true,
-    message: "Employee data retrieved successfully",
-    data: { employees },
-    timestamp: new Date().toISOString()
+  db.all("SELECT * FROM employees", [], (err, rows) => {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+
+    res.json({
+      success: true,
+      message: "Employee data retrieved successfully",
+      data: { employees: rows },
+      timestamp: new Date().toISOString()
+    });
   });
 });
 
-// GET employee by ID
-app.get('/api/v1/data/employees/:id', (req, res) => {
-  const emp = employees.find(e => e.employeeId === req.params.id);
-  if (!emp) return res.status(404).json({ success: false, error: "Employee not found" });
-  res.json({ success: true, data: emp, timestamp: new Date().toISOString() });
+// POST new employee
+app.post('/api/v1/data/employees', (req, res) => {
+  const emp = req.body;
+  db.run(
+    `INSERT INTO employees 
+      (employeeId, employeeName, managerEmail, enrollmentStatus, enrolledSpecializationName, expectedCompetency, daysToGo, endDate)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      emp.employeeId,
+      emp.employeeName,
+      emp.managerEmail,
+      emp.enrollmentStatus,
+      emp.enrolledSpecializationName,
+      emp.expectedCompetency,
+      emp.daysToGo,
+      emp.endDate
+    ],
+    function(err) {
+      if (err) return res.status(500).json({ success: false, error: err.message });
+      res.json({ success: true, message: "Employee added successfully", timestamp: new Date().toISOString() });
+    }
+  );
 });
 
-// GET all managers
-app.get('/api/v1/data/managers', (req, res) => {
-  res.json({ success: true, data: managers, timestamp: new Date().toISOString() });
+// PUT update employee by ID
+app.put('/api/v1/data/employees/:id', (req, res) => {
+  const emp = req.body;
+  const id = req.params.id;
+  db.run(
+    `UPDATE employees SET 
+      employeeName=?, managerEmail=?, enrollmentStatus=?, enrolledSpecializationName=?, expectedCompetency=?, daysToGo=?, endDate=?
+     WHERE employeeId=?`,
+    [
+      emp.employeeName,
+      emp.managerEmail,
+      emp.enrollmentStatus,
+      emp.enrolledSpecializationName,
+      emp.expectedCompetency,
+      emp.daysToGo,
+      emp.endDate,
+      id
+    ],
+    function(err) {
+      if (err) return res.status(500).json({ success: false, error: err.message });
+      res.json({ success: true, message: "Employee updated successfully", timestamp: new Date().toISOString() });
+    }
+  );
 });
 
-// GET all email templates
-app.get('/api/v1/data/email-templates', (req, res) => {
-  res.json({ success: true, data: emailTemplates, timestamp: new Date().toISOString() });
-});
-
-// GET all email logs
-app.get('/api/v1/data/email-logs', (req, res) => {
-  res.json({ success: true, data: emailLogs, timestamp: new Date().toISOString() });
+// DELETE employee by ID
+app.delete('/api/v1/data/employees/:id', (req, res) => {
+  const id = req.params.id;
+  db.run(`DELETE FROM employees WHERE employeeId=?`, [id], function(err) {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+    res.json({ success: true, message: "Employee deleted successfully", timestamp: new Date().toISOString() });
+  });
 });
 
 // Start server

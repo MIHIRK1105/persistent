@@ -7,26 +7,46 @@ app.use(express.json());
 // Create SQLite database in memory
 const db = new sqlite3.Database(':memory:');
 
-// Create a sample table
+// Create Employee table
 db.serialize(() => {
-  db.run("CREATE TABLE users (id INT, name TEXT)");
-  db.run("INSERT INTO users (id, name) VALUES (1, 'Preeti')");
-  db.run("INSERT INTO users (id, name) VALUES (2, 'John')");
+  db.run(`CREATE TABLE employees (
+    employeeId TEXT,
+    employeeName TEXT,
+    managerEmail TEXT,
+    enrollmentStatus TEXT,
+    enrolledSpecializationName TEXT,
+    expectedCompetency TEXT,
+    daysToGo INTEGER,
+    endDate TEXT
+  )`);
+
+  // Insert sample data
+  db.run(`INSERT INTO employees 
+    (employeeId, employeeName, managerEmail, enrollmentStatus, enrolledSpecializationName, expectedCompetency, daysToGo, endDate)
+    VALUES ('E001', 'Preeti', 'manager1@example.com', 'Enrolled', 'Data Science', 'Intermediate', 30, '2025-12-31')`);
+  db.run(`INSERT INTO employees 
+    (employeeId, employeeName, managerEmail, enrollmentStatus, enrolledSpecializationName, expectedCompetency, daysToGo, endDate)
+    VALUES ('E002', 'John', 'manager2@example.com', 'Not Enrolled', 'AI', 'Beginner', 15, '2025-11-30')`);
 });
 
-// Dummy GET endpoint
-app.get('/users', (req, res) => {
-  db.all("SELECT * FROM users", [], (err, rows) => {
-    if(err) {
-      res.status(500).json({error: err.message});
+// Dummy GET endpoint for employees
+app.get('/api/v1/data/employees', (req, res) => {
+  db.all("SELECT * FROM employees", [], (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
       return;
     }
-    res.json(rows);
+    res.json({
+      success: true,
+      message: "Employee data retrieved successfully",
+      data: { employees: rows },
+      timestamp: new Date().toISOString()
+    });
   });
 });
 
 // Start server
 const PORT = 3000;
 app.listen(PORT, () => {
-  console.log("Server running on http://localhost:3000");
+  console.log(`Server running on http://localhost:${PORT}`);
 });

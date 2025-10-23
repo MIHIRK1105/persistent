@@ -1,0 +1,9 @@
+#ignore node modules
+Backend/node_modules
+
+#ignore logs
+*.log
+
+#Ignore OS files
+.DS_Store
+Thumbs.db

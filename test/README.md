@@ -1,18 +1,26 @@
 Karate + Node.js Backend Integration
+
 📖 Overview
+
 This project combines a Node.js backend and Karate API tests to validate REST endpoints.
 
 Backend: Node.js (Express-based server)
+
 Testing: Karate framework (via Maven)
+
 API Spec: openapi.yaml for reference
 
 🛠️ Prerequisites
 Make sure these are installed:
 
 Tool	      Version (minimum)	    Check command
+
 Node.js	       18+	                 node -v
+
 npm	           8+	                   npm -v
+
 Java           17+	               java -version
+
 Maven	         3.8+	                 mvn -v
 
 🚀 Step 1: Open the Project:

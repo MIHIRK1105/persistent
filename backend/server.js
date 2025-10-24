@@ -13,8 +13,8 @@ const db = new sqlite3.Database('./employees.db', (err) => {
   }
 });
 
-// Create table only if it doesn't exist
 db.serialize(() => {
+  // Create table only if it doesn't exist
   db.run(`CREATE TABLE IF NOT EXISTS employees (
     employeeId TEXT PRIMARY KEY,
     employeeName TEXT,
@@ -25,6 +25,18 @@ db.serialize(() => {
     daysToGo INTEGER,
     endDate TEXT
   )`);
+
+  // Insert initial dummy data only if table is empty
+  db.get("SELECT COUNT(*) AS count FROM employees", (err, row) => {
+    if (err) return console.error(err.message);
+    if (row.count === 0) {
+      db.run(`INSERT INTO employees 
+        (employeeId, employeeName, managerEmail, enrollmentStatus, enrolledSpecializationName, expectedCompetency, daysToGo, endDate)
+        VALUES 
+        ('E001', 'Preeti', 'manager1@example.com', 'Enrolled', 'Data Science', 'Intermediate', 30, '2025-12-31'),
+        ('E002', 'John', 'manager2@example.com', 'Not Enrolled', 'AI', 'Beginner', 15, '2025-11-30')`);
+    }
+  });
 });
 
 // --- GET all employees ---

@@ -22,7 +22,9 @@ File → Open Folder → karate1_merged
 In the VS Code terminal:
 
 cd karate1_merged
+
 npm install
+
 #This installs all required packages listed in package.json.
 
 🧩 Step 3: Start the Backend Server

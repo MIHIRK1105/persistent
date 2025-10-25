@@ -60,3 +60,15 @@ Open target/karate-reports/karate-summary.html
 
 Review passed/failed test cases
 
+To check docker file:
+
+Step 1: docker compose up --build
+
+To Re-run:
+
+Step 1: docker compose down
+
+Step 2: docker compose up --build
+
+
+

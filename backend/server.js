@@ -1,105 +1,85 @@
+
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
 const app = express();
 app.use(express.json());
 
-// Use file-based SQLite database
-const db = new sqlite3.Database('./employees.db', (err) => {
-  if (err) {
-    console.error("Error opening database:", err.message);
-  } else {
-    console.log("Connected to SQLite database.");
-  }
+const PORT = process.env.PORT || 3000;
+const DB_NAME = process.env.DB_NAME || 'data.db';
+const TABLE_NAME = process.env.TABLE_NAME || 'records';
+
+// Connect to SQLite database
+const db = new sqlite3.Database(path.join(__dirname, DB_NAME), (err) => {
+  if (err) console.error('Database connection error:', err.message);
+  else console.log(`Connected to SQLite database: ${DB_NAME}`);
 });
 
+// Auto-create table if not exists (generic key/value store)
 db.serialize(() => {
-  // Create table only if it doesn't exist
-  db.run(`CREATE TABLE IF NOT EXISTS employees (
-    employeeId TEXT PRIMARY KEY,
-    employeeName TEXT,
-    managerEmail TEXT,
-    enrollmentStatus TEXT,
-    enrolledSpecializationName TEXT,
-    expectedCompetency TEXT,
-    daysToGo INTEGER,
-    endDate TEXT
+  db.run(`CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    data TEXT NOT NULL
   )`);
+});
 
-  // Insert initial dummy data only if table is empty
-  db.get("SELECT COUNT(*) AS count FROM employees", (err, row) => {
-    if (err) return console.error(err.message);
-    if (row.count === 0) {
-      db.run(`INSERT INTO employees 
-        (employeeId, employeeName, managerEmail, enrollmentStatus, enrolledSpecializationName, expectedCompetency, daysToGo, endDate)
-        VALUES 
-        ('E001', 'Preeti', 'manager1@example.com', 'Enrolled', 'Data Science', 'Intermediate', 30, '2025-12-31'),
-        ('E002', 'John', 'manager2@example.com', 'Not Enrolled', 'AI', 'Beginner', 15, '2025-11-30')`);
-    }
+// 1. Health Check Endpoint
+app.get('/api/v1/health', (req, res) => {
+  res.json({ status: 'UP', message: 'Server is healthy' });
+});
+
+// 2. Create Record (POST)
+app.post('/api/v1/users', (req, res) => {
+  const data = JSON.stringify(req.body);
+  const sql = `INSERT INTO ${TABLE_NAME} (data) VALUES (?)`;
+  db.run(sql, [data], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
+    const record = { id: this.lastID, ...req.body };
+    res.status(201).json(record);
   });
 });
 
-// --- GET all employees ---
-app.get('/api/v1/data/employees', (req, res) => {
-  db.all("SELECT * FROM employees", [], (err, rows) => {
-    if (err) return res.status(500).json({ success: false, error: err.message });
-    res.json({
-      success: true,
-      message: "Employee data retrieved successfully",
-      data: { employees: rows },
-      timestamp: new Date().toISOString()
+// 3. Get Record by ID (GET)
+app.get('/api/v1/users/:id', (req, res) => {
+  const id = req.params.id;
+  db.get(`SELECT data FROM ${TABLE_NAME} WHERE id = ?`, [id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    const record = { id: Number(id), ...JSON.parse(row.data) };
+    res.status(200).json(record);
+  });
+});
+
+// 4. Update Record (PUT)
+app.put('/api/v1/users/:id', (req, res) => {
+  const id = req.params.id;
+  const data = JSON.stringify(req.body);
+  const sql = `UPDATE ${TABLE_NAME} SET data = ? WHERE id = ?`;
+  db.run(sql, [data, id], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
+    if (this.changes === 0) return res.status(404).json({ error: 'Not found' });
+    const record = { id: Number(id), ...req.body };
+    res.status(200).json(record);
+  });
+});
+
+// 5. Delete Record (DELETE)
+app.delete('/api/v1/users/:id', (req, res) => {
+  const id = req.params.id;
+  db.get(`SELECT data FROM ${TABLE_NAME} WHERE id = ?`, [id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: 'Not found' });
+
+    const record = { id: Number(id), ...JSON.parse(row.data) };
+    db.run(`DELETE FROM ${TABLE_NAME} WHERE id = ?`, [id], (delErr) => {
+      if (delErr) return res.status(500).json({ error: delErr.message });
+      res.status(200).json(record);
     });
   });
 });
 
-// --- POST new employee ---
-app.post('/api/v1/data/employees', (req, res) => {
-  const emp = req.body;
-  db.run(`INSERT INTO employees 
-    (employeeId, employeeName, managerEmail, enrollmentStatus, enrolledSpecializationName, expectedCompetency, daysToGo, endDate)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [emp.employeeId, emp.employeeName, emp.managerEmail, emp.enrollmentStatus, emp.enrolledSpecializationName, emp.expectedCompetency, emp.daysToGo, emp.endDate],
-    function(err) {
-      if (err) return res.status(500).json({ success: false, error: err.message });
-      res.json({ success: true, message: "Employee added successfully", timestamp: new Date().toISOString() });
-    }
-  );
+// Start Server
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
 });
-
-// --- PUT to update an employee ---
-app.put('/api/v1/data/employees/:id', (req, res) => {
-  const id = req.params.id;
-  const emp = req.body;
-  db.run(`UPDATE employees SET
-    employeeName = ?, 
-    managerEmail = ?, 
-    enrollmentStatus = ?, 
-    enrolledSpecializationName = ?, 
-    expectedCompetency = ?, 
-    daysToGo = ?, 
-    endDate = ? 
-    WHERE employeeId = ?`,
-    [emp.employeeName, emp.managerEmail, emp.enrollmentStatus, emp.enrolledSpecializationName, emp.expectedCompetency, emp.daysToGo, emp.endDate, id],
-    function(err) {
-      if (err) return res.status(500).json({ success: false, error: err.message });
-      res.json({ success: true, message: "Employee updated successfully", timestamp: new Date().toISOString() });
-    }
-  );
-});
-
-// --- DELETE an employee ---
-app.delete('/api/v1/data/employees/:id', (req, res) => {
-  const id = req.params.id;
-  db.run(
-    "DELETE FROM employees WHERE employeeId = ?",
-    [id],
-    function(err) {
-      if (err) return res.status(500).json({ success: false, error: err.message });
-      res.json({ success: true, message: "Employee deleted successfully", timestamp: new Date().toISOString() });
-    }
-  );
-});
-
-// Start server
-const PORT = 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

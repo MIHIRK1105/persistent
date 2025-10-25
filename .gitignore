@@ -1,9 +1,13 @@
-#ignore node modules
+# Ignore node modules
 Backend/node_modules
 
-#ignore logs
+# Ignore logs
 *.log
 
-#Ignore OS files
+# Ignore OS files
 .DS_Store
 Thumbs.db
+
+# Ignore database and text files
+*.db
+*.txt

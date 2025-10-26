@@ -1,106 +1,61 @@
+# Dummy Backend with Karate API Tests
 
-# Dummy Backend API
+## Project Overview
+This project is a dummy backend server using *SQLite* for data storage and running on *port 3000. It is integrated with *Karate for automated API testing and supports full CRUD operations for users.
 
-This is a dummy backend API for employee management. It supports *GET, POST, PUT, and DELETE* operations on employee data. The backend uses *Node.js, Express, and SQLite* database.
+## Server Setup
+1. Navigate to the backend directory:  
+   ```bash
+   cd C:/Users/Admin/Desktop/dummy-backend/backend
 
----
-
-## Prerequisites
-
-Make sure you have the following installed:
-
-- [Node.js](https://nodejs.org/en/download/) (v18+ recommended)  
-- [npm](https://www.npmjs.com/get-npm) (comes with Node.js)  
-- SQLite (for database inspection) or [DB Browser for SQLite](https://sqlitebrowser.org/)
-
----
-
-## Setup Instructions
-
-1. *Clone the repository*
-
-```bash
-git clone https://github.com/MIHIRK1105/persistent.git
-
-2. Navigate to the backend folder
-
-
-
-cd backend
-
-3. Install dependencies
-
-
+2. Install dependencies (if any):
 
 npm install
 
-4. Start the server
 
-
+3. Start the server on port 3000:
 
 node server.js
 
-The server will run on:
 
-http://localhost:3000
+4. The backend is now running at:
 
+http://localhost:3000/api/v1
 
----
-
-API Endpoints
-
-Endpoint	Method	Body	Response	Description
-
-/api/v1/data/employees	GET	None	{ "success": true, "message": "...", "data": { "employees": [...] }, "timestamp": "..." }	Fetch all employees
-/api/v1/data/employees	POST	{ "employeeId": "E003", "employeeName": "John", "managerEmail": "...", "enrollmentStatus": "...", "enrolledSpecializationName": "...", "expectedCompetency": "...", "daysToGo": 15, "endDate": "2025-11-30" }	{ "success": true, "message": "Employee added successfully", "timestamp": "..." }	Add a new employee
-/api/v1/data/employees/:id	PUT	Same structure as POST	{ "success": true, "message": "Employee updated successfully", "timestamp": "..." }	Update an existing employee
-/api/v1/data/employees/:id	DELETE	None	{ "success": true, "message": "Employee deleted successfully", "timestamp": "..." }	Delete an employee by ID
+and is connected to the SQLite database employees.db.
 
 
 
----
+Karate Tests
+
+Test files are located in:
+
+C:/Users/Admin/Desktop/dummy-backend/test/karate1_merged/karate1_merged/target/test-classes/tests/
+
+To run all tests, use:
+
+java -jar karate-1.5.1.jar -T 1 -o target/test-classes/tests <path-to-feature-files>
+
+Key feature files:
+
+health.feature – Checks server health.
+
+user-crud.feature – Full CRUD flow for User API.
+
+
+Test Reports
+
+After running Karate tests, the report is generated here:
+
+C:/Users/Admin/Desktop/dummy-backend/test/karate1_merged/karate1_merged/target/test-classes/tests/target/karate-reports/karate-summary.html
+
+Open the HTML file in a browser to view the test summary.
 
 Notes
 
-The database is SQLite file-based (employees.db) and persists data across server restarts.
+Base URL for API is set in karate-config.js.
 
-You can inspect the database using DB Browser for SQLite.
+Ensure the backend server is running before executing the tests.
 
-The code is generic: you can insert, update, delete, or fetch any employee data dynamically.
+The server uses employees.db as the SQLite database.
 
-Replace :id in PUT and DELETE endpoints with the employeeId of the employee you want to update or delete.
-
-
-
----
-
-Example Requests
-
-GET all employees
-
-curl -X GET http://localhost:3000/api/v1/data/employees
-
-POST new employee
-
-curl -X POST http://localhost:3000/api/v1/data/employees \
--H "Content-Type: application/json" \
--d '{
-  "employeeId": "E003",
-  "employeeName": "John",
-  "managerEmail": "manager2@example.com",
-  "enrollmentStatus": "Enrolled",
-  "enrolledSpecializationName": "AI",
-  "expectedCompetency": "Beginner",
-  "daysToGo": 15,
-  "endDate": "2025-11-30"
-}'
-
-PUT update employee
-
-curl -X PUT http://localhost:3000/api/v1/data/employees/E003 \
--H "Content-Type: application/json" \
--d '{ "employeeName": "John Doe", "managerEmail": "manager3@example.com", ... }'
-
-DELETE employee
-
-curl -X DELETE http://localhost:3000/api/v1/data/employees/E003

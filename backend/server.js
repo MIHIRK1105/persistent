@@ -1,4 +1,3 @@
-
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
@@ -12,7 +11,7 @@ const TABLE_NAME = process.env.TABLE_NAME || 'records';
 
 // Connect to SQLite database
 const db = new sqlite3.Database(path.join(__dirname, DB_NAME), (err) => {
-  if (err) console.error('Database connection error:', err.message);
+  if (err) console.error('❌ Database connection error:', err.message);
   else console.log(`Connected to SQLite database: ${DB_NAME}`);
 });
 
@@ -24,12 +23,16 @@ db.serialize(() => {
   )`);
 });
 
-// 1. Health Check Endpoint
+// --------------------------
+// 1️⃣ Health Check Endpoint
+// --------------------------
 app.get('/api/v1/health', (req, res) => {
   res.json({ status: 'UP', message: 'Server is healthy' });
 });
 
-// 2. Create Record (POST)
+// --------------------------
+// 2️⃣ Create Record (POST)
+// --------------------------
 app.post('/api/v1/users', (req, res) => {
   const data = JSON.stringify(req.body);
   const sql = `INSERT INTO ${TABLE_NAME} (data) VALUES (?)`;
@@ -39,19 +42,34 @@ app.post('/api/v1/users', (req, res) => {
     res.status(201).json(record);
   });
 });
+// --------------------------
+// 2.1️⃣ Get All Records (GET)
+// --------------------------
+app.get('/api/v1/users', (req, res) => {
+  db.all(`SELECT id, data FROM ${TABLE_NAME}`, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const users = rows.map(row => ({ id: row.id, ...JSON.parse(row.data) }));
+    res.status(200).json(users);
+  });
+});
 
-// 3. Get Record by ID (GET)
+// --------------------------
+// 3️⃣ Get Record by ID (GET)
+// --------------------------
 app.get('/api/v1/users/:id', (req, res) => {
   const id = req.params.id;
   db.get(`SELECT data FROM ${TABLE_NAME} WHERE id = ?`, [id], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!row) return res.status(404).json({ error: 'Not found' });
-    const record = { id: Number(id), ...JSON.parse(row.data) };
+    const record = { id:
+       Number(id),...JSON.parse(row.data) };
     res.status(200).json(record);
   });
 });
 
-// 4. Update Record (PUT)
+// --------------------------
+// 4️⃣ Update Record (PUT)
+// --------------------------
 app.put('/api/v1/users/:id', (req, res) => {
   const id = req.params.id;
   const data = JSON.stringify(req.body);
@@ -64,7 +82,9 @@ app.put('/api/v1/users/:id', (req, res) => {
   });
 });
 
-// 5. Delete Record (DELETE)
+// --------------------------
+// 5️⃣ Delete Record (DELETE)
+// --------------------------
 app.delete('/api/v1/users/:id', (req, res) => {
   const id = req.params.id;
   db.get(`SELECT data FROM ${TABLE_NAME} WHERE id = ?`, [id], (err, row) => {
@@ -79,7 +99,9 @@ app.delete('/api/v1/users/:id', (req, res) => {
   });
 });
 
+// --------------------------
 // Start Server
+// --------------------------
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });

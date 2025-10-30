@@ -48,6 +48,8 @@ In another terminal (while the backend is running):
 
 mvn test
 
+mvn test -Dtest=AllTestsRunner
+
 #This will:
 #Start the Karate test runner
 #execute .feature files (like health.feature)
